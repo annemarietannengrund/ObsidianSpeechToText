@@ -1,0 +1,20 @@
+---
+version: "3.11"
+
+services:
+  convert:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: obsidian_speech_to_text_converter
+    cap_drop: [ all ]
+    cap_add: [ chown, setgid, setuid, kill ]
+    volumes:
+      - ./:/app
+      # best practice to link to a dedicated directory for transcriptions
+      # PLEASE ADAPT THE LEFT HAND SIDE TO YOU DEDICATED AUDIO DIRECTORY
+      - ./recordings:/data
+      # if run locally, whisper stores models in ~/.cache/whisper
+      - ./models:/root/.cache/whisper
+    working_dir: /app
+    entrypoint: python3 main.py
