@@ -128,16 +128,6 @@ so instead of Y-m-d you might use d-m-Y, then you can influence the output forma
 see also what to do if you are having multiple 
 file name formats in your audio folder [here](#a-mixed-source-string-date-file-name-pattern-folder).
 
-### language code parameters
-Have your language better understood by customizing it according to the audio source you have at hand.
-
-you can now pass a language codes longer than 2 characters.
-I havent checked the behavior for whisper, but this should enable a more 
-custom language for the usage of the google translator.
-
-when you pass in a 2 letter code the script will adapt it for google in a limited fashion like so: `de` -> `de-DE`
-the 2 letter code is the main focus since its the standard used by openai's whisper model which I favor.
-
 ### Action Keywords
 Action Keywords are this tools way of formatting a transcribed text by commands said during the recording.
 the default action keywords are contained in `Config.ACTION_KEYWORDS` in `main.py::Config` along with a short
@@ -202,17 +192,6 @@ there where multiple solutions
 2. pre-bake an image that contains the models to be used (NOPE, never done that, stumbled over some overachieving stuff, too much effort)
 3. share a directory with the host machine to persist the models during runs (YEP! thats why you have a `models` folder in the project directory) 
 
-### google
-Since the scope of the project tends to my favorite flavor, I do prefer the local model over google.
-the google implementation was just so small that I added it and I do not plan on digging deeper on this route.
-
-the local models achieve astonishing results, including punctuation, which apparently google lacks completely.
-all google translations do not contain any punctuations, commas, question or exclamation marks.
-
-I can not recommend the google thingy unless you are fine with sharing your texts with google and can work with
-free flowing text.
-
-if thats the case, you can profit from the speed of the google API which is probably superior to your local potato.
 ### Video Files
 This has not yet been considered or tested.
 the strength of this tool comes from the action keywords. so you can format the text at least in a rudimentary way.
