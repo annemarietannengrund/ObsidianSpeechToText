@@ -156,37 +156,37 @@ class Config:
         return kwargs
 
     def get_language(self) -> str:
-        KDEFAULT_LANGUAGE = self.script_args.get("LANGUAGE", self.DEFAULT_LANGUAGE)
-        return getenv('OSTTC_LANGUAGE', default=KDEFAULT_LANGUAGE)
+        ENV_DEFAULT_LANGUAGE = getenv('OSTTC_LANGUAGE', default=self.DEFAULT_LANGUAGE)
+        return self.script_args.get("LANGUAGE", ENV_DEFAULT_LANGUAGE)
 
     def get_model_size(self) -> str:
-        KDEFAULT_MODEL_SIZ = self.script_args.get("MODEL_SIZE", self.DEFAULT_MODEL_SIZ)
-        return getenv("OSTTC_MODEL_SIZE", default=KDEFAULT_MODEL_SIZ)
+        ENV_DEFAULT_MODEL_SIZ = getenv("OSTTC_MODEL_SIZE", default=self.DEFAULT_MODEL_SIZ)
+        return self.script_args.get("MODEL_SIZE", ENV_DEFAULT_MODEL_SIZ)
 
     def get_path(self) -> str:
-        KDEFAULT_LOCAL_PATH = self.script_args.get("PATH", self.DEFAULT_LOCAL_PATH)
-        return "/data" if self.use_docker else getenv("OSTTC_LOCAL_PATH", default=KDEFAULT_LOCAL_PATH)
+        ENV_DEFAULT_LOCAL_PATH = getenv("OSTTC_LOCAL_PATH", default=self.DEFAULT_LOCAL_PATH)
+        return "/data" if self.use_docker else self.script_args.get("PATH", ENV_DEFAULT_LOCAL_PATH)
 
     def get_action_keywords(self) -> dict:
-        KDEFAULT_USE_KEYWORDS = self.script_args.get("KEYWORDS", self.DEFAULT_USE_KEYWORDS)
-        empty_word_map = False if int(getenv('OSTTC_KEYWORDS', default=KDEFAULT_USE_KEYWORDS)) else True
+        ENV_DEFAULT_USE_KEYWORDS = int(getenv('OSTTC_KEYWORDS', default=self.DEFAULT_USE_KEYWORDS))
+        empty_word_map = False if int(self.script_args.get("KEYWORDS", ENV_DEFAULT_USE_KEYWORDS)) else True
         return {} if empty_word_map else self.ACTION_KEYWORDS
 
     def get_overwrite_existing(self) -> int:
-        KDEFAULT_OVERWRITE = self.script_args.get("OVERWRITE", self.DEFAULT_OVERWRITE)
-        return int(getenv("OSTTC_OVERWRITE", default=KDEFAULT_OVERWRITE))
+        ENV_DEFAULT_OVERWRITE = getenv("OSTTC_OVERWRITE", default=self.DEFAULT_OVERWRITE)
+        return int(self.script_args.get("OVERWRITE", ENV_DEFAULT_OVERWRITE))
 
     def get_source_string_format(self) -> str:
-        KDEFAULT_SOURCE_STRING = self.script_args.get("SOURCE_STRING", self.SOURCE_STRING_FORMAT)
-        return getenv("OSTTC_SOURCE_STRING", default=KDEFAULT_SOURCE_STRING)
+        ENV_DEFAULT_SOURCE_STRING = getenv("OSTTC_SOURCE_STRING", default=self.SOURCE_STRING_FORMAT)
+        return self.script_args.get("SOURCE_STRING", ENV_DEFAULT_SOURCE_STRING)
 
     def get_target_string_format(self) -> str:
-        KDEFAULT_TARGET_STRING = self.script_args.get("TARGET_STRING", self.TARGET_STRING_FORMAT)
-        return getenv("OSTTC_TARGET_STRING", default=KDEFAULT_TARGET_STRING)
+        ENV_DEFAULT_TARGET_STRING = getenv("OSTTC_TARGET_STRING", default=self.TARGET_STRING_FORMAT)
+        return self.script_args.get("TARGET_STRING", ENV_DEFAULT_TARGET_STRING)
 
     def get_media_files(self) -> list:
-        KDEFAULT_MEDIA_FILES = self.script_args.get("MEDIA_FILES", self.MEDIA_FILES)
-        return getenv("OSTTC_MEDIA_FILES", default=KDEFAULT_MEDIA_FILES).split(',')
+        ENV_DEFAULT_MEDIA_FILES = getenv("OSTTC_MEDIA_FILES", default=self.MEDIA_FILES)
+        return self.script_args.get("MEDIA_FILES", ENV_DEFAULT_MEDIA_FILES).split(',')
 
     def get_converter(self):
         return GetTextFromAudioWhisper(self.language, self.model_size, action_keywords=self.action_keywords)
