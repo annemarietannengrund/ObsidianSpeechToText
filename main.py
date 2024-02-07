@@ -10,7 +10,8 @@ from time import time
 from moviepy.editor import AudioFileClip
 from speech_recognition import AudioFile, Recognizer
 from whisper import load_model
-
+from dotenv import load_dotenv
+load_dotenv()
 basicConfig(level=INFO)
 
 
@@ -212,7 +213,7 @@ class Config:
 
     def get_path(self) -> str:
         KDEFAULT_LOCAL_PATH = self.script_args.get("PATH", self.DEFAULT_LOCAL_PATH)
-        return "/data" if self.use_docker else KDEFAULT_LOCAL_PATH
+        return "/data" if self.use_docker else getenv("OSTTC_LOCAL_PATH", default=KDEFAULT_LOCAL_PATH)
 
     def get_action_keywords(self) -> dict:
         KDEFAULT_USE_KEYWORDS = self.script_args.get("KEYWORDS", self.DEFAULT_USE_KEYWORDS)
@@ -293,7 +294,7 @@ class ObsidianSpeechToTextConverter:
         info(f"Transcribing: '{basename(audio_file)}'")
         return self.active_model.transcribe(audio_file)
 
-    def create_transcription_file(self, out_file, content) -> None:
+    def create_transcription_file(self, out_file:str, content:str) -> None:
         info(f"Saving transcription to: '{out_file}'")
         with open(out_file, "w") as f:
             f.write(content)

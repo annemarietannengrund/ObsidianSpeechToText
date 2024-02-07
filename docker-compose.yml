@@ -11,9 +11,7 @@ services:
     cap_add: [ chown, setgid, setuid, kill ]
     volumes:
       - ./:/app
-      # best practice to link to a dedicated directory for transcriptions
-      # PLEASE ADAPT THE LEFT HAND SIDE TO YOU DEDICATED AUDIO DIRECTORY
-      - ./recordings:/data
+      - "${OSTTC_LOCAL_PATH:-./recordings}:/data"
       # if run locally, whisper stores models in ~/.cache/whisper
       - ./models:/root/.cache/whisper
     working_dir: /app
