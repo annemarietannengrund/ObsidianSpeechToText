@@ -12,7 +12,6 @@ from dotenv import load_dotenv
 load_dotenv()
 basicConfig(level=INFO)
 
-
 class GetTextFromAudio(ABC):
     @abstractmethod
     def transcribe(self, audio_file: str):
@@ -29,6 +28,12 @@ class GetTextFromAudio(ABC):
             text = sub(word, format, text, flags=IGNORECASE)
         return text
 
+    def format_obsidian_tags(self, text: str):
+        return text
+    def format_hashtags(self, text: str):
+        return text
+
+
     @staticmethod
     def word_counter(text) -> int:
         return len(text.split())
@@ -43,7 +48,7 @@ class GetTextFromAudioWhisper(GetTextFromAudio):
             raise ValueError(f"Invalid model size. Valid options are: {', '.join(self.model_sizes)}")
         self.model = model
         self.active_model = None
-        self.format_words = kwargs.get("action_keywords") if kwargs.get("action_keywords", {}) else {}
+        self.actions = kwargs.get("action_keywords") if kwargs.get("action_keywords", {}) else {}
 
     def transcribe(self, audio_file: str) -> str:
         if self.active_model is None:
@@ -57,7 +62,7 @@ class GetTextFromAudioWhisper(GetTextFromAudio):
             result = result['text'].strip()
             word_count = self.word_counter(result)
             info(f"transcribed {word_count} in {duration} seconds")
-            result = super().format_text(result, self.format_words)
+            result = super().format_text(result, self.actions)
         except Exception as e:
             error(e)
             raise Exception(f"Error while converting {audio_file} with message: {e}")
@@ -105,25 +110,48 @@ class Config:
     - pipes | are used to make or statements
     - stuff in () requires exact sequence of characters
     """
+    ACTION_KEYWORD= "obsidian"
+
+    ACTION_TYPE_LINK = "link"
+    ACTION_TYPE_TAGS = "text|tech"
+    ACTION_TYPE_CITATION = "Zitat|citation"
+    ACTION_TYPE_DIVIDER = "divider"
+    ACTION_TYPE_HEADLINE = "überschrift|headline"
+    ACTION_TYPE_LINEBREAK = "Line Break|Absatz|Zeilenumbruch"
+    ACTION_TYPE_LONG_DASH = "Gedankenstrich"
+    ACTION_TYPE_LIST_ELEMENT = "Listen[\\s-]?strich"
+    ACTION_TYPE_CHECKBOX_ELEMENT = "checkbox item"
+    ACTION_TYPE_BADWORDS = "schei(ss|ß)e|fuck|kacke|fick|dreck(s?mist)+"
+    ACTION_TYPE_HASHTAG = "hashtag "
+
+    ACTION_START_WORDS = "start|anfang|begin"
+    ACTION_STOP_WORDS = "stop|ende|end"
+
+    NEWLINE_ACTIONS = True
+    NLP = "\n" if NEWLINE_ACTIONS else ""
+
     ACTION_KEYWORDS = {
         # pairwise instructions
-        r"obsidian[-\s]?link (start|anfang)[\s.,]?\s?": "[[",
-        r"[.,]?\sobsidian[-\s]?Link (stop|ende)[.,]?\s?": "]]",
+        f"{ACTION_KEYWORD}[-\\s]?{ACTION_TYPE_LINK} ({ACTION_START_WORDS})[\\s.,]?\\s?": "[[",
+        f"[.,]?\\s{ACTION_KEYWORD}[-\\s]?{ACTION_TYPE_LINK} ({ACTION_STOP_WORDS})[.,]?\\s?": "]]",
 
-        r"obsidian[-,\s]+?(text|tech)[s]?[,]? (start|anfang)[\s.,]?\s?": "#TAGS--- ",
-        r"[.,]?\sobsidian[-,\s]+?(text|tech)[,\s]? (stop|ende)[.,]?\s?": " ---TAGS#",
+        f"{ACTION_KEYWORD}[-,\\s]+?({ACTION_TYPE_TAGS})[s]?[,]? ({ACTION_START_WORDS})[\\s.,]?\\s?": "#TAGS--- ",
+        f"[.,]?\\s{ACTION_KEYWORD}[-,\\s]+?({ACTION_TYPE_TAGS})[s]?[,\\s]? ({ACTION_STOP_WORDS})[.,]?\\s?": " ---TAGS#",
 
         # single line instructions
-        r"(Line Break|Absatz|Zeilenumbruch)[.,]?\s?": "\n",
-        r"\s?(Zitat (Anfang|Start|start))[.,]?\s?": "\n> ",
-        r"Überschrift H1[.,]?\s?": "# ",
-        r"Überschrift H2[.,]?\s?": "## ",
-        r"Überschrift H3[.,]?\s?": "### ",
-        r"Überschrift H4[.,]?\s?": "#### ",
-        r"Überschrift H5[.,]?\s?": "##### ",
-        r"Überschrift H6[.,]?\s?": "###### ",
-        r"Gedankenstrich": "—",
-        r"\s?Listenstrich[\s.,]?": "\n- ",
+        f"({ACTION_TYPE_LINEBREAK})[.,]?\s?": "\n",
+        f"\\s?({ACTION_TYPE_CITATION} ({ACTION_START_WORDS}))[.,]?\\s?": f"{NLP}> ",
+        f"\\s?(({ACTION_TYPE_DIVIDER}) ({ACTION_START_WORDS}))[.,]?\\s?": f"{NLP}---\n",
+        f"({ACTION_TYPE_HEADLINE}) H1[.,]?\\s?": f"{NLP}# ",
+        f"({ACTION_TYPE_HEADLINE}) H2[.,]?\\s?": f"{NLP}## ",
+        f"({ACTION_TYPE_HEADLINE}) H3[.,]?\\s?": f"{NLP}### ",
+        f"({ACTION_TYPE_HEADLINE}) H4[.,]?\\s?": f"{NLP}#### ",
+        f"({ACTION_TYPE_HEADLINE}) H5[.,]?\\s?": f"{NLP}##### ",
+        f"({ACTION_TYPE_HEADLINE}) H6[.,]?\\s?": f"{NLP}###### ",
+        f"({ACTION_TYPE_LONG_DASH})[-\\s]?({ACTION_START_WORDS})": f"{NLP}—",
+        f"\\s\\s?({ACTION_TYPE_LIST_ELEMENT})[\\s.,]?": f"{NLP}- ",
+        f"\\s\\s?({ACTION_TYPE_CHECKBOX_ELEMENT})[\\s.,]?": f"{NLP}- [ ] ",
+        f"({ACTION_TYPE_BADWORDS})": "💩",
     }
 
     def __init__(self) -> None:
