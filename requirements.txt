@@ -1,4 +1,2 @@
-SpeechRecognition
-moviepy
 openai-whisper
 python-dotenv

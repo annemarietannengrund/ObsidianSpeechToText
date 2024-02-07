@@ -2,13 +2,11 @@ from abc import ABC, abstractmethod
 from argparse import ArgumentParser
 from datetime import datetime
 from logging import basicConfig, info, error, INFO
-from os import remove, walk, getenv
+from os import walk, getenv
 from os.path import join, splitext, basename, exists
 from re import sub, IGNORECASE
 from time import time
 
-from moviepy.editor import AudioFileClip
-from speech_recognition import AudioFile, Recognizer
 from whisper import load_model
 from dotenv import load_dotenv
 load_dotenv()
@@ -73,57 +71,12 @@ class GetTextFromAudioWhisper(GetTextFromAudio):
             error(e)
         info("Loading of whisper model finished")
 
-
-class GetTextFromAudioGoogle(GetTextFromAudio):
-
-    def __init__(self, language, **kwargs):
-        self.language = language
-        self.active_model = None
-        self.format_words = kwargs.get("format_words") if kwargs.get("format_words", {}) else {}
-
-    def transcribe(self, audio_file) -> str:
-        if self.active_model == None:
-            self.init_model()
-        tmp_file = audio_file
-        if audio_file.endswith(".webm"):
-            info("Obsidian audio webm detected, converting to supported wav file format")
-            tmp_file = tmp_file.replace(".webm", ".wav")
-            clip = AudioFileClip(audio_file)
-            clip.write_audiofile(tmp_file)
-
-        with AudioFile(tmp_file) as source:
-            audio_text = self.active_model.listen(source)
-            info("Converting audio transcripts into text ...")
-            try:
-                start = time()
-                result = self.active_model.recognize_google(audio_text, language=self.language).strip()
-                duration = time() - start
-                info("end transscription")
-                word_count = self.word_counter(result)
-                info(f"transcribed {word_count} in {duration} seconds")
-            except Exception as e:
-                error(e)
-                raise Exception(f"Error while converting {audio_file} with message: {e}")
-
-        if audio_file.endswith(".webm"):
-            info("removing temporary Obsidian audio wav")
-            remove(tmp_file)
-        result = super().format_text(result, self.format_words)
-        return result
-
-    def init_model(self):
-        info(f"Loading online google model with language code *{self.language}*")
-        self.active_model = Recognizer()
-        info("Loading of google model finished")
-
-
 class Config:
     # default script configs
     DEFAULT_LANGUAGE = "de"
     DEFAULT_MODEL_SIZ = "medium"
     DEFAULT_LOCAL_PATH = "./recordings"
     DEFAULT_USE_KEYWORDS = 1
-    DEFAULT_USE_OFFLINE = 1
     DEFAULT_OVERWRITE = 0
     MEDIA_FILES = ",".join(['.webm', '.mp3', '.wav', '.m4a'])
     """
@@ -181,7 +134,6 @@ class Config:
         self.path = self.get_path()
         info(f"input_folder has been configured to '{self.path}'")
         self.action_keywords = self.get_action_keywords()
-        self.use_offline = self.get_use_offline()
         self.overwrite_existing = self.get_overwrite_existing()
         self.source_string = self.get_source_string_format()
         self.target_string = self.get_target_string_format()
@@ -220,10 +172,6 @@ class Config:
         empty_word_map = False if int(getenv('OSTTC_KEYWORDS', default=KDEFAULT_USE_KEYWORDS)) else True
         return {} if empty_word_map else self.ACTION_KEYWORDS
 
-    def get_use_offline(self) -> int:
-        KDEFAULT_USE_OFFLINE = self.script_args.get("USE_OFFLINE", self.DEFAULT_USE_OFFLINE)
-        return int(getenv("OSTTC_USE_OFFLINE", default=KDEFAULT_USE_OFFLINE))
-
     def get_overwrite_existing(self) -> int:
         KDEFAULT_OVERWRITE = self.script_args.get("OVERWRITE", self.DEFAULT_OVERWRITE)
         return int(getenv("OSTTC_OVERWRITE", default=KDEFAULT_OVERWRITE))
@@ -241,13 +189,7 @@ class Config:
         return getenv("OSTTC_MEDIA_FILES", default=KDEFAULT_MEDIA_FILES).split(',')
 
     def get_converter(self):
-        offline_whisper = GetTextFromAudioWhisper(self.language, self.model_size, action_keywords=self.action_keywords)
-        glang_code = self.language
-        if len(glang_code)==2:
-            glang_code = "-".join([self.language, self.language.upper()])
-        online_google = GetTextFromAudioGoogle(glang_code, action_keywords=self.action_keywords)
-        converter = offline_whisper if self.use_offline else online_google
-        return converter
+        return GetTextFromAudioWhisper(self.language, self.model_size, action_keywords=self.action_keywords)
 
 
 class ObsidianSpeechToTextConverter:

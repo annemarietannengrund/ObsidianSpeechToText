@@ -49,7 +49,7 @@ The script offers various ways to influence the configuration.
 The order is `keyword argument` > `environment variables` > `default values`
 
 ### Your Voice
-Yes, your voice is a configuration tool for whisper (the offline model) at least.
+Yes, your voice is a configuration tool for whisper.
 
 - Slow Speaking & Speaking with pauses => more usage of punctuations.
 - fast Speaking => more usage of commas.
@@ -70,7 +70,6 @@ all environment variables used by the script are prefixed with `OSTTC_`.
 | `OSTTC_LANGUAGE`      | `LANGUAGE`      | Helping the model define the language it hears for best results.               | `de`                     | `de`, `de-DE`, `en-UK`.                                                                   |
 | `OSTTC_MODEL_SIZE`    | `MODEL_SIZE`    | Bigger is better, smaller is faster, tradeoff between quality and performance, | `medium`                 | `tiny.en`, `tiny`, `base.en`, `base`, `small.en`, `small`, `medium.en`, `medium`, `large` |
 | `OSTTC_KEYWORDS`      | `KEYWORDS`      | toggles the postprocessing of transcribed text to apply voice commands.        | `1`                      | `0`, `1`.                                                                                 |
-| `OSTTC_USE_OFFLINE`   | `USE_OFFLINE`   | toggles between offline (whisper) and online (google)                          | `0`                      | `0`, `1`.                                                                                 |
 | `OSTTC_OVERWRITE`     | `OVERWRITE`     | precesses valid audiofiles regardless of existing out file.                    | `1`                      | `0`, `1`.                                                                                 |
 | `OSTTC_LOCAL_PATH`    | `LOCAL_PATH`    | Your local path to a directory holding audio files for transcription           | `./recordings`           | `string` path to a folder                                                                 |
 | `OSTTC_SOURCE_STRING` | `SOURCE_STRING` | any expected inpit filename format you have to extract datetime dates          | `Recording %Y%m%d%H%M%S` |                                                                                           |
@@ -78,9 +77,9 @@ all environment variables used by the script are prefixed with `OSTTC_`.
 | `OSTTC_MEDIA_FILES`   | `MEDIA_FILES`   | append new file endings if curious                                             | `.webm,.mp3,.wav,.m4a`   |                                                                                           |
 
 For language codes see:
-- [supported Google Language Codes](https://cloud.google.com/speech-to-text/docs/speech-to-text-supported-languages?hl=de) 
 - [supported Whisper Language Codes](https://github.com/openai/whisper?tab=readme-ov-file#available-models-and-languages)
 
+the whisper model uses a 2 letter language code system!
 
 ## Execution
 The plain call relies either on default values or environment variables from the `.env` file.
