@@ -4,7 +4,7 @@ from datetime import datetime
 from logging import basicConfig, info, error, INFO
 from os import walk, getenv
 from os.path import join, splitext, basename, exists
-from re import sub, IGNORECASE
+from re import sub, IGNORECASE, search, DOTALL, split
 from time import time
 
 from whisper import load_model
@@ -21,18 +21,48 @@ class GetTextFromAudio(ABC):
     def init_model(self) -> None:
         pass
 
-    def format_text(self, text, words) -> str:
+    def format_text(self, text, words, audio_file_name:str) -> str:
         if not words:
             return text
         for word, format in words.items():
             text = sub(word, format, text, flags=IGNORECASE)
-        return text
+        text = self.format_hashtags(text)
+        text, tags = self.remove_and_format_obsidian_tags(text)
+        link_audio = True if "#LINK_AUDIO_FILE#" in text else False
+        header = self.create_properties_header(tags, link_audio, audio_file_name)
+        if link_audio:
+            text = text.replace("#LINK_AUDIO_FILE#", '')
+        return header + text
 
-    def format_obsidian_tags(self, text: str):
-        return text
+    def create_properties_header(self, tags:list, link_audio:bool, audio_file_name:str)->str:
+        tag_str = ""
+        for tag in tags:
+            tag_str = tag_str + f"\n  - {tag}"
+        tpl = "---\n#TAGS##AUDIO_LINK#---\n"
+
+        audio_link_str = '' if not link_audio else f'audiolog: "[[{audio_file_name}]]"\n'
+        out = tpl.replace('#AUDIO_LINK#', audio_link_str)
+        tag_str = "tags:#TAGS#\n".replace('#TAGS#', tag_str)
+        if not tags:
+            tag_str = ""
+        out = out.replace('#TAGS#', tag_str)
+        audio_link_preview = '' if not link_audio else f'![[{audio_file_name}]]\n'
+        return out + audio_link_preview
+
+    def remove_and_format_obsidian_tags(self, text: str)->tuple:
+        pattern = r"#TAGS---(.*?)---TAGS#"
+        match = search(pattern, text, DOTALL)
+
+        if not match:
+            return text, []
+        split_list = split(r"[,\.\s]", match.group(1))
+        tags = [word.capitalize() for word in split_list if word]
+        text = text.replace(match.group(0), "")
+        return text, tags
+
     def format_hashtags(self, text: str):
-        return text
-
+        pattern = r'Hashtag ([^,\.]*)'
+        return sub(pattern, lambda m: '#' + ''.join(word.capitalize() for word in m.group(1).split()), text)
 
     @staticmethod
     def word_counter(text) -> int:
@@ -61,8 +91,8 @@ class GetTextFromAudioWhisper(GetTextFromAudio):
             info("end transscription")
             result = result['text'].strip()
             word_count = self.word_counter(result)
-            info(f"transcribed {word_count} in {duration} seconds")
-            result = super().format_text(result, self.actions)
+            info(f"transcribed {word_count} words in {duration} seconds")
+            result = super().format_text(result, self.actions, basename(audio_file))
         except Exception as e:
             error(e)
             raise Exception(f"Error while converting {audio_file} with message: {e}")
@@ -123,6 +153,7 @@ class Config:
     ACTION_TYPE_CHECKBOX_ELEMENT = "checkbox item"
     ACTION_TYPE_BADWORDS = "schei(ss|ß)e|fuck|kacke|fick|dreck(s?mist)+"
     ACTION_TYPE_HASHTAG = "hashtag "
+    ACTION_TYPE_AUDIO_FILE_LINK = "link[,.]?\\saudio\\s?file[,.]?"
 
     ACTION_START_WORDS = "start|anfang|begin"
     ACTION_STOP_WORDS = "stop|ende|end"
@@ -152,6 +183,7 @@ class Config:
         f"\\s\\s?({ACTION_TYPE_LIST_ELEMENT})[\\s.,]?": f"{NLP}- ",
         f"\\s\\s?({ACTION_TYPE_CHECKBOX_ELEMENT})[\\s.,]?": f"{NLP}- [ ] ",
         f"({ACTION_TYPE_BADWORDS})": "💩",
+        f"({ACTION_TYPE_AUDIO_FILE_LINK})": "#LINK_AUDIO_FILE#",
     }
 
     def __init__(self) -> None:
