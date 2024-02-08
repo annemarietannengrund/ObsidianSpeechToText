@@ -1,10 +1,11 @@
 from argparse import ArgumentParser
 from os import getenv
 from logging import info
-from src.AudioTextProcessorWhisper import AudioTextProcessorWhisper
+from src.processor.Whisper import Whisper
 from dotenv import load_dotenv
 
 load_dotenv()
+
 class Config:
     # default script configs
     DEFAULT_LANGUAGE = "de"
@@ -62,7 +63,7 @@ class Config:
         f"[.,]?\\s{ACTION_KEYWORD}[-\\s]?{ACTION_TYPE_LINK} ({ACTION_STOP_WORDS})[.,]?\\s?": "]] ",
 
         f"{ACTION_KEYWORD}[-,\\s]+?({ACTION_TYPE_TAGS})[s]?[,]? ({ACTION_START_WORDS})[\\s.,]?\\s?": "#TAGS--- ",
-        f"[.,]?\\s{ACTION_KEYWORD}[-,\\s]+?({ACTION_TYPE_TAGS})[s]?[,\\s]? ({ACTION_STOP_WORDS})[.,]?\\s?": " ---TAGS#",
+        f"[.,]?\\s{ACTION_KEYWORD}[-,\\s]+?({ACTION_TYPE_TAGS})[s]?[.,\\s]? ({ACTION_STOP_WORDS})[.,]?\\s?": " ---TAGS#",
 
         # single line instructions
         f"({ACTION_TYPE_LINEBREAK})[.,]?\s?": "\n",
@@ -145,4 +146,4 @@ class Config:
         return self.script_args.get("MEDIA_FILES", ENV_DEFAULT_MEDIA_FILES).split(',')
 
     def get_converter(self):
-        return AudioTextProcessorWhisper(self.language, self.model_size, action_keywords=self.action_keywords)
+        return Whisper(self.language, self.model_size, action_keywords=self.action_keywords)

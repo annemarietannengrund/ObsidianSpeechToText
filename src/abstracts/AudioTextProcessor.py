@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from re import sub, IGNORECASE, search, DOTALL, split
+from logging import info
 
 
 class AudioTextProcessor(ABC):
@@ -29,16 +30,16 @@ class AudioTextProcessor(ABC):
         return header + text
 
     def create_properties_header(self, properties: list, link_audio: str) -> str:
-        if not properties and not link_audio:
+        if not any(properties) and not link_audio:
             return ""
-        if not properties and link_audio:
+        if not any(properties) and link_audio:
             return f'![[{link_audio}]]\n'
 
-        header = "\n".join(['---', "\n".join(properties), '---\n'])
+        header = "\n".join(['---', "\n".join(properties), '---'])
         if link_audio:
-            header = "\n".join([header, f'![[{link_audio}]]\n'])
+            header = "\n".join([header, f'![[{link_audio}]]'])
 
-        return header
+        return "".join([header, "\n"])
 
     def get_tags_str_for_properties(self, text: str) -> str:
         pattern = r"#TAGS---(.*?)---TAGS#"

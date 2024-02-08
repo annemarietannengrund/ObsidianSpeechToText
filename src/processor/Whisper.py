@@ -1,10 +1,10 @@
-from src.AudioTextProcessor import AudioTextProcessor
+from src.abstracts.AudioTextProcessor import AudioTextProcessor
 from time import time
 from whisper import load_model
 from logging import info, error
 from os.path import basename
 
-class AudioTextProcessorWhisper(AudioTextProcessor):
+class Whisper(AudioTextProcessor):
     model_sizes = ["tiny.en", "tiny", "base.en", "base", "small.en", "small", "medium.en", "medium", "large"]
 
     def __init__(self, language, model, **kwargs):

@@ -1,5 +1,5 @@
 from src.Config import Config
-from src.AudioTextProcessor import AudioTextProcessor
+from src.abstracts.AudioTextProcessor import AudioTextProcessor
 from datetime import datetime
 from logging import info, error, warning
 from os import walk
@@ -13,8 +13,7 @@ class ObsidianSpeechToTextConverter:
         self.media_files = config.media_files
         self.source_string_format = config.source_string
         self.target_string_format = config.target_string
-        if not issubclass(type(config.converter), AudioTextProcessor):
-            raise Exception(f"Invalid model supplied. {type(config.converter)} is not extending from GetTextFromAudio")
+
         self.active_model = config.converter
 
     def get_markdown_file_name(self, source_filename: str, root: str) -> str:
