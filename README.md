@@ -14,6 +14,8 @@ After all, being able to search my audio recordings with `line:(search term)` wo
 
 this here is the lovechild of couple of days of iterations.
 
+see my [personal benchmarking script](Test-Talk-Script.md) and the [obsidian markdown file created](Test-Talk-Result.md).
+
 ## intended/probable usages
 many ideas come to mind for the possible use cases.
 this seems extremely useful for people not having a good possibility to write or writing is cumbersome.

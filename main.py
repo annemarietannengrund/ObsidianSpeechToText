@@ -61,7 +61,7 @@ class GetTextFromAudio(ABC):
         return text, tags
 
     def format_hashtags(self, text: str):
-        pattern = r'Hashtag ([^,\.]*)'
+        pattern = r'Hashtag ([^,\.]*)[,.]?'
         return sub(pattern, lambda m: '#' + ''.join(word.capitalize() for word in m.group(1).split()), text)
 
     @staticmethod
@@ -145,15 +145,16 @@ class Config:
     ACTION_TYPE_LINK = "link"
     ACTION_TYPE_TAGS = "text|tech"
     ACTION_TYPE_CITATION = "Zitat|citation"
-    ACTION_TYPE_DIVIDER = "divider"
+    ACTION_TYPE_DIVIDER = "text[\s-]?teiler|text divider"
     ACTION_TYPE_HEADLINE = "überschrift|headline"
     ACTION_TYPE_LINEBREAK = "Line Break|Absatz|Zeilenumbruch"
     ACTION_TYPE_LONG_DASH = "Gedankenstrich"
     ACTION_TYPE_LIST_ELEMENT = "Listen[\\s-]?strich"
-    ACTION_TYPE_CHECKBOX_ELEMENT = "checkbox item"
-    ACTION_TYPE_BADWORDS = "schei(ss|ß)e|fuck|kacke|fick|dreck(s?mist)+"
+    ACTION_TYPE_CHECKED_CHECKBOX_ELEMENT = "checkbox[\\s-]item erfüllt"
+    ACTION_TYPE_CHECKBOX_ELEMENT = "checkbox[\\s-]item"
+    ACTION_TYPE_BADWORDS = "schei(ss|ß)e|fuck|kacke|fick|dreck(s?mist)+|mist"
     ACTION_TYPE_HASHTAG = "hashtag "
-    ACTION_TYPE_AUDIO_FILE_LINK = "link[,.]?\\saudio\\s?file[,.]?"
+    ACTION_TYPE_AUDIO_FILE_LINK = "Link[-,.\\s]+?Audio[-,.\\s]+?File[,.]+?"
 
     ACTION_START_WORDS = "start|anfang|begin"
     ACTION_STOP_WORDS = "stop|ende|end"
@@ -164,7 +165,7 @@ class Config:
     ACTION_KEYWORDS = {
         # pairwise instructions
         f"{ACTION_KEYWORD}[-\\s]?{ACTION_TYPE_LINK} ({ACTION_START_WORDS})[\\s.,]?\\s?": "[[",
-        f"[.,]?\\s{ACTION_KEYWORD}[-\\s]?{ACTION_TYPE_LINK} ({ACTION_STOP_WORDS})[.,]?\\s?": "]]",
+        f"[.,]?\\s{ACTION_KEYWORD}[-\\s]?{ACTION_TYPE_LINK} ({ACTION_STOP_WORDS})[.,]?\\s?": "]] ",
 
         f"{ACTION_KEYWORD}[-,\\s]+?({ACTION_TYPE_TAGS})[s]?[,]? ({ACTION_START_WORDS})[\\s.,]?\\s?": "#TAGS--- ",
         f"[.,]?\\s{ACTION_KEYWORD}[-,\\s]+?({ACTION_TYPE_TAGS})[s]?[,\\s]? ({ACTION_STOP_WORDS})[.,]?\\s?": " ---TAGS#",
@@ -181,6 +182,7 @@ class Config:
         f"({ACTION_TYPE_HEADLINE}) H6[.,]?\\s?": f"{NLP}###### ",
         f"({ACTION_TYPE_LONG_DASH})[-\\s]?({ACTION_START_WORDS})": f"{NLP}—",
         f"\\s\\s?({ACTION_TYPE_LIST_ELEMENT})[\\s.,]?": f"{NLP}- ",
+        f"\\s\\s?({ACTION_TYPE_CHECKED_CHECKBOX_ELEMENT})[\\s.,]?": f"{NLP}- [x] ",
         f"\\s\\s?({ACTION_TYPE_CHECKBOX_ELEMENT})[\\s.,]?": f"{NLP}- [ ] ",
         f"({ACTION_TYPE_BADWORDS})": "💩",
         f"({ACTION_TYPE_AUDIO_FILE_LINK})": "#LINK_AUDIO_FILE#",
