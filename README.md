@@ -54,7 +54,7 @@ The order is `keyword argument` > `environment variables` > `default values`
 Yes, your voice is a configuration tool for whisper.
 
 - Slow Speaking & Speaking with pauses => more usage of punctuations.
-- fast Speaking => more usage of commas.
+- fast Speaking => more usage of commas and spaces between words.
 - emphasizing on a word/sentence with force (exclamation) => more usage of exclamation marks.
 - emphasizing on a word/sentence with high pitched end (question) => more usage of question marks.
 
@@ -83,6 +83,58 @@ For language codes see:
 
 the whisper model uses a 2 letter language code system!
 
+### Action Keywords
+
+Action keywords are a sequence of characters that are extracted from the transcribed audio file and processed by
+regular expressions.
+
+the flow here is:
+1. you say a existing keyword (sequence) in the audio recording
+2. audio recording gets transcribed to text
+3. all action keywords regular expression replacements get applied (i.e.: "Line Break." => "\n"
+
+#### Components
+The Action Keywords are triggered by one word or a sequence of words whose 
+transcription should then match a regular expression.
+
+There are 3 types of action keyword components.
+
+##### Master Keyword
+In case your action is so common that you want to make sure it doesn't accidental replaces something you didnt want to.
+
+The default master `ACTION_KEYWORD` is `Obsidian`, this keyword has the same meaning as Star Trek's famous `Computer` keyword (or `hey siri`, `hey google`, etc)
+
+##### Action Type Keyword
+
+Defines a `ACTION_TYPE_*` you want to execute, multiple possible keywords are seperated by pipe "|" and can be further
+enhanced with regeular expressions.
+
+| ACTION_TYPE                            | values       | Description                                                                                                                 |
+|----------------------------------------|--------------|-----------------------------------------------------------------------------------------------------------------------------|
+| `ACTION_TYPE_LINK`                     | `link`       | Used for Obisian's `[[` and `]]` link syntax. [is a paired element](#action-type-start-end-paired-elements)!                |
+| `ACTION_TYPE_TAGS`                     | `text\|tech` | Used for Obisian's file property tag's. [is a paired element](#action-type-start-end-paired-elements)!                      |
+| `ACTION_TYPE_CITATION`                 | `xxxx`       |                                                                                                                             |
+| `ACTION_TYPE_DIVIDER`                  | `xxxx`       |                                                                                                                             |
+| `ACTION_TYPE_HEADLINE`                 | `xxxx`       |                                                                                                                             |
+| `ACTION_TYPE_LINEBREAK`                | `xxxx`       |                                                                                                                             |
+| `ACTION_TYPE_LONG_DASH`                | `xxxx`       |                                                                                                                             |
+| `ACTION_TYPE_LIST_ELEMENT`             | `xxxx`       |                                                                                                                             |
+| `ACTION_TYPE_CHECKED_CHECKBOX_ELEMENT` | `xxxx`       |                                                                                                                             |
+| `ACTION_TYPE_CHECKBOX_ELEMENT`         | `xxxx`       |                                                                                                                             |
+| `ACTION_TYPE_BADWORDS`                 | `xxxx`       |                                                                                                                             |
+| `ACTION_TYPE_HASHTAG`                  | `xxxx`       |                                                                                                                             |
+| `ACTION_TYPE_AUDIO_FILE_LINK`          | `xxxx`       | Flag. if detected in text it add's a file property "audiolog" with a link to the source audio and a banged link at the top |
+
+
+##### Action Type start-end paired elements
+
+#### Default Composition
+
+| Phrase | Gets replaced with | Description |
+|--------|--------------------|-------------|
+| `xxx`  | `yyy`              |             |
+
+
 ## Execution
 The plain call relies either on default values or environment variables from the `.env` file.
 
@@ -101,7 +153,7 @@ docker-compose run --rm convert --kwargs OPTION1=33 OPTION2=/my/path OPTION3=45
 python main.py --kwargs OPTION1=33 OPTION2=/my/path OPTION3=45
 ```
 
-## features
+## Features
 The OSTTC comes with a handful of features you might like ;)
 
 ### custom filename handling
@@ -130,37 +182,23 @@ so instead of Y-m-d you might use d-m-Y, then you can influence the output forma
 see also what to do if you are having multiple 
 file name formats in your audio folder [here](#a-mixed-source-string-date-file-name-pattern-folder).
 
-### Action Keywords
-Action Keywords are this tools way of formatting a transcribed text by commands said during the recording.
-the default action keywords are contained in `Config.ACTION_KEYWORDS` in `main.py::Config` along with a short
-regular expression tutorial for people that want to build up on that.
+### Action Keywords Concept
+RE-DO me again!
 
-for deactivation see [here (environment)](#use-keywords) or [here (argument)](#use-keywords-1)
-
-in general I discovered that codewords within natural text are a bit tricky, here's why.
-you may tend to want short codewords like "stop", but these codewords wil manipulate that exact word in the process.
-
-so you can now not say the word "stop" anymore without it being replaced.
-this could also be a wanted feature like etend "dsdm" to "dear sir or madam" everytime.
-
-the problem is the line between similarities to other words should be clear.
-okay, enough, here is what I have come up with:
-
-we face 2 types of commands (elements) that we make use of in a markup language
-- single commands
-- pairwise commands
-
-single commands are like "line break", "list item dash" or similiar, equivalent to html's tag's `<br/>`.
-double commands are so to speak 1 level harder than single ones.
-
-to handle them better I had to introduce a command prefix `obsidian`, 
-then comes the type `link` and then the action `start` to produce obsidians internal `[[` link start.
-
-after all, this is fully customizable, you pick the words, the replacements, the regular expressions.
-
-## Roadmap
-### Tag keyword action
-being able to add tags to a markdown from the audiofile.
+## Feature Roadmap
+- [x] Runs out-of-the box ([see](#execution)).
+- [x] Being able to add tags (inline) to a markdown from the audiofile.
+- [x] Being able to add tags (header) to a markdown from the audiofile.
+- [x] Handle custom filename date extraction/matching  ([see](#custom-filename-handling)).
+- [x] Have all moving parts configurable via arguments or environment ([see](#configuration-parameters)).
+- [x] Action keyword adds audiofile link into markdown.
+- [x] Bad word/foul language filter.
+- [x] Freely configurable actions and action keywords.
+- [x] Traverses the whole given audio recordings directory inclusive sub-folders.
+- [ ] Predefined set of tags that is added to all created files of a script run
+- [ ] Write tests
+- [ ] Clean up code. the proof of concept grew out of its simple script stage.
+- [ ] Also run a linter across the project
 
 ## Known Issues
 Issues known and anticipated.
@@ -175,6 +213,7 @@ GPU/CUDA support for your docker container yourself.
 also you'll need a RTX enabled nvidia geforce card to have CUDA available.
 
 a switch to a x86 architecture might also have massive performance impact positively speaking.
+
 ### whisper pip
 im unsure if it was a quirk during development, but I am conflicted between the pip `openai-whisper` module
 and the git hosted version.
@@ -190,7 +229,7 @@ everytime I ran the fresh containerized project, when I ran the converter, it do
 "that is not a sustainable workflow" I thought to myself.
 
 there where multiple solutions
-1. hadbaking wget with the models into the makefile. (NOPE, this would also pinned version numbers and checksums, stuff that whisper handles itself)
+1. hard baking wget with the models into the makefile. (NOPE, this would also pinned version numbers and checksums, stuff that whisper handles itself)
 2. pre-bake an image that contains the models to be used (NOPE, never done that, stumbled over some overachieving stuff, too much effort)
 3. share a directory with the host machine to persist the models during runs (YEP! thats why you have a `models` folder in the project directory) 
 

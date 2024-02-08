@@ -1,18 +1,20 @@
 from abc import ABC, abstractmethod
 from argparse import ArgumentParser
 from datetime import datetime
-from logging import basicConfig, info, error, INFO
+from logging import basicConfig, info, error, INFO, warning
 from os import walk, getenv
 from os.path import join, splitext, basename, exists
 from re import sub, IGNORECASE, search, DOTALL, split
 from time import time
 
-from whisper import load_model
 from dotenv import load_dotenv
+from whisper import load_model
+
 load_dotenv()
 basicConfig(level=INFO)
 
-class GetTextFromAudio(ABC):
+
+class AudioTextProcessor(ABC):
     @abstractmethod
     def transcribe(self, audio_file: str):
         pass
@@ -21,55 +23,78 @@ class GetTextFromAudio(ABC):
     def init_model(self) -> None:
         pass
 
-    def format_text(self, text, words, audio_file_name:str) -> str:
+    def format_text(self, text, words, audio_file_name: str) -> str:
         if not words:
             return text
         for word, format in words.items():
             text = sub(word, format, text, flags=IGNORECASE)
         text = self.format_hashtags(text)
-        text, tags = self.remove_and_format_obsidian_tags(text)
-        link_audio = True if "#LINK_AUDIO_FILE#" in text else False
-        header = self.create_properties_header(tags, link_audio, audio_file_name)
-        if link_audio:
-            text = text.replace("#LINK_AUDIO_FILE#", '')
+        tags = self.get_tags_str_for_properties(text)
+        text = self.remove_obsidian_tags_from_text(text)
+        link_audio = self.has_audiofile_keyword(text, audio_file_name)
+        audiolog = self.get_audiofile_keyword_for_properties(link_audio)
+        text = self.remove_audiofile_keyword(text)
+
+        properties = [tags, audiolog]
+        info(properties)
+        header = self.create_properties_header(properties, link_audio)
         return header + text
 
-    def create_properties_header(self, tags:list, link_audio:bool, audio_file_name:str)->str:
-        tag_str = ""
-        for tag in tags:
-            tag_str = tag_str + f"\n  - {tag}"
-        tpl = "---\n#TAGS##AUDIO_LINK#---\n"
+    def create_properties_header(self, properties: list, link_audio: str) -> str:
+        if not properties and not link_audio:
+            return ""
+        if not properties and link_audio:
+            return f'![[{link_audio}]]\n'
 
-        audio_link_str = '' if not link_audio else f'audiolog: "[[{audio_file_name}]]"\n'
-        out = tpl.replace('#AUDIO_LINK#', audio_link_str)
-        tag_str = "tags:#TAGS#\n".replace('#TAGS#', tag_str)
-        if not tags:
-            tag_str = ""
-        out = out.replace('#TAGS#', tag_str)
-        audio_link_preview = '' if not link_audio else f'![[{audio_file_name}]]\n'
-        return out + audio_link_preview
+        header = "\n".join(['---', "\n".join(properties), '---\n'])
+        if link_audio:
+            header = "\n".join([header, f'![[{link_audio}]]\n'])
 
-    def remove_and_format_obsidian_tags(self, text: str)->tuple:
+        return header
+
+    def get_tags_str_for_properties(self, text: str) -> str:
         pattern = r"#TAGS---(.*?)---TAGS#"
         match = search(pattern, text, DOTALL)
 
         if not match:
-            return text, []
+            return ""
         split_list = split(r"[,\.\s]", match.group(1))
         tags = [word.capitalize() for word in split_list if word]
-        text = text.replace(match.group(0), "")
-        return text, tags
+        if not tags:
+            return ""
+        tag_str = "tags:"
+        for tag in tags:
+            tag_str = tag_str + f"\n  - {tag}"
+        return tag_str
+
+    def get_audiofile_keyword_for_properties(self, audio_file_name: str) -> str:
+        if not audio_file_name:
+            return ""
+        return f'audiolog: "[[{audio_file_name}]]"'
+
+    def has_audiofile_keyword(self, text: str, audio_file_name: str) -> str:
+        return audio_file_name if "#LINK_AUDIO_FILE#" in text else ""
+
+    def remove_obsidian_tags_from_text(self, text: str) -> str:
+        pattern = r"#TAGS---(.*?)---TAGS#"
+        match = search(pattern, text, DOTALL)
+        if not match:
+            return text
+        return text.replace(match.group(0), "")
+
+    def remove_audiofile_keyword(self, text: str) -> str:
+        return text.replace("#LINK_AUDIO_FILE#", '')
 
     def format_hashtags(self, text: str):
         pattern = r'Hashtag ([^,\.]*)[,.]?'
         return sub(pattern, lambda m: '#' + ''.join(word.capitalize() for word in m.group(1).split()), text)
 
     @staticmethod
-    def word_counter(text) -> int:
+    def word_counter(text: str) -> int:
         return len(text.split())
 
 
-class GetTextFromAudioWhisper(GetTextFromAudio):
+class AudioTextProcessorWhisper(AudioTextProcessor):
     model_sizes = ["tiny.en", "tiny", "base.en", "base", "small.en", "small", "medium.en", "medium", "large"]
 
     def __init__(self, language, model, **kwargs):
@@ -106,6 +131,7 @@ class GetTextFromAudioWhisper(GetTextFromAudio):
             error(e)
         info("Loading of whisper model finished")
 
+
 class Config:
     # default script configs
     DEFAULT_LANGUAGE = "de"
@@ -114,11 +140,6 @@ class Config:
     DEFAULT_USE_KEYWORDS = 1
     DEFAULT_OVERWRITE = 0
     MEDIA_FILES = ",".join(['.webm', '.mp3', '.wav', '.m4a'])
-    """
-    Default case for obsidian audio logs, their name in the process is in the format of `Recording 20240205220851`
-    in step 1. the SOURCE_STRING_FORMAT will be applied to the remaining file name in the correct format.
-    in step 2. the markdown file name created from the audio will be formatted in the TARGET_STRING_FORMAT format
-    """
     SOURCE_STRING_FORMAT = "Recording %Y%m%d%H%M%S"
     TARGET_STRING_FORMAT = "%Y-%m-%d-%H-%M.md"
     """
@@ -140,7 +161,7 @@ class Config:
     - pipes | are used to make or statements
     - stuff in () requires exact sequence of characters
     """
-    ACTION_KEYWORD= "obsidian"
+    ACTION_KEYWORD = "obsidian"
 
     ACTION_TYPE_LINK = "link"
     ACTION_TYPE_TAGS = "text|tech"
@@ -251,7 +272,7 @@ class Config:
         return self.script_args.get("MEDIA_FILES", ENV_DEFAULT_MEDIA_FILES).split(',')
 
     def get_converter(self):
-        return GetTextFromAudioWhisper(self.language, self.model_size, action_keywords=self.action_keywords)
+        return AudioTextProcessorWhisper(self.language, self.model_size, action_keywords=self.action_keywords)
 
 
 class ObsidianSpeechToTextConverter:
@@ -261,13 +282,21 @@ class ObsidianSpeechToTextConverter:
         self.media_files = config.media_files
         self.source_string_format = config.source_string
         self.target_string_format = config.target_string
-        if not issubclass(type(config.converter), GetTextFromAudio):
+        if not issubclass(type(config.converter), AudioTextProcessor):
             raise Exception(f"Invalid model supplied. {type(config.converter)} is not extending from GetTextFromAudio")
         self.active_model = config.converter
 
     def get_markdown_file_name(self, source_filename: str, root: str) -> str:
-        datetime_object = datetime.strptime(source_filename, self.source_string_format)
-        out_filename = datetime_object.strftime(self.target_string_format)
+        try:
+            datetime_object = datetime.strptime(source_filename, self.source_string_format)
+            out_filename = datetime_object.strftime(self.target_string_format)
+        except ValueError as e:
+            error(e)
+            warning(
+                f"The provided source filename '{source_filename}' can't be parsed with '{self.source_string_format}'.")
+            out_filename = "".join([source_filename, '.md'])
+            info(f"falling back to original filename: '{out_filename}'")
+
         return join(root, out_filename)
 
     def convert(self) -> None:
@@ -298,7 +327,7 @@ class ObsidianSpeechToTextConverter:
         info(f"Transcribing: '{basename(audio_file)}'")
         return self.active_model.transcribe(audio_file)
 
-    def create_transcription_file(self, out_file:str, content:str) -> None:
+    def create_transcription_file(self, out_file: str, content: str) -> None:
         info(f"Saving transcription to: '{out_file}'")
         with open(out_file, "w") as f:
             f.write(content)

@@ -1,6 +1,6 @@
 `Überschrift H1` "Obsidian Speech-to-Text Tool Demonstration" `Absatz`
 `Überschrift H2` "Einleitung" `Absatz`
-"Herzlich willkommen zur Vorführung meines **Speech-to-Text Tools**!" `Absatz`
+"Herzlich willkommen zur Vorführung meines Speech-to-Text Tools!" `Absatz`
 "In diesem Skript werden wir verschiedene Funktionen präsentieren, um die vielseitigen Möglichkeiten dieses Tools zu zeigen." `Absatz`
 `Überschrift H2` "Zitiere texte & Personen" `Absatz`
 `Zitat start` "keiner von uns ist alleine so dumm wie wir alle zusammen" `Absatz`
@@ -23,4 +23,3 @@
 `Obsidian Tags Start` "alpha beta omega" `Obsidian Tags Ende`
 `Absatz``Absatz` trenne gedanken durch horizontale separatoren. `textteiler`
 "Es kann natürlich sein das manchmal hinten auch einfach nichts besseres als mist, scheiße und kacke herauskommt." `Absatz` `Absatz`
-
