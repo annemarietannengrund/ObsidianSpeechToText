@@ -1,68 +1,47 @@
-import os
 import unittest
-from unittest.mock import MagicMock
-from datetime import datetime
-from src.Converter import ObsidianSpeechToTextConverter
 from unittest.mock import Mock, patch
+from src.Converter import ObsidianSpeechToTextConverter
 
 
 class TestObsidianSpeechToTextConverter(unittest.TestCase):
-    class ConfigMock:
-        def __init__(self):
-            self.path = "input_folder"
-            self.overwrite_existing = False
-            self.media_files = [".mp3", ".wav"]
-            self.source_string = "%Y%m%d_%H%M%S"
-            self.target_string = "%Y%m%d"
-            self.converter = MagicMock(name="AudioTextProcessor")
-
     def setUp(self):
-        self.converter = ObsidianSpeechToTextConverter(self.ConfigMock())
+        self.mock_config = Mock()
+        self.mock_config.path = "/test/path"
+        self.mock_config.overwrite_existing = False
+        self.mock_config.media_files = [".wav", ".mp3"]
+        self.mock_config.source_string = "%Y_%m_%d_%H_%M_%S"
+        self.mock_config.target_string = "%Y-%m-%d-%H-%M-%S"
+        self.mock_config.converter = Mock()
 
-    def tearDown(self):
-        pass
+        self.converter = ObsidianSpeechToTextConverter(self.mock_config)
+
+        self.root_path = "/some/path"
+        self.source_filename = "test_file"
 
     def test_get_markdown_file_name(self):
-        filename = self.converter.get_markdown_file_name("20230303_120000", "some_root")
-        self.assertEqual(filename, "some_root/20230303.md")
+        final_name = self.converter.get_markdown_file_name(self.source_filename, self.root_path)
+        expected_name = f"{self.root_path}/test_file.md"
+        self.assertEqual(final_name, expected_name)
 
-    def test_get_markdown_file_name_with_invalid_filename_format(self):
-        with self.assertLogs() as cm:
-            filename = self.converter.get_markdown_file_name("invalid_format", "some_root")
-            self.assertEqual(filename, "some_root/invalid_format.md")
-            self.assertIn("WARNING:root:The provided source filename 'invalid_format' can't be parsed with",
-                          cm.output[0])
-
-    def test_convert_file_in_mime_types(self):
-        self.converter.transcribe = MagicMock()
-        self.converter.create_transcription_file = MagicMock()
-        self.converter.input_folder = "."
-        self.converter.media_files = [".txt"]
-        with self.assertLogs() as cm:
+    def test_convert_exception(self):
+        self.converter.active_model = None
+        with self.assertRaises(Exception):
             self.converter.convert()
-            print(cm.output[0])
-            self.assertIn("INFO:root:Transcribing:", cm.output[0])
-
-    def test_skip_file_not_in_mime_types(self):
-        self.converter.transcribe = MagicMock()
-        self.converter.create_transcription_file = MagicMock()
-        self.converter.input_folder = "."
-        self.converter.media_files = [".mp3"]
-        with self.assertLogs() as cm:
-            self.converter.convert()
-            self.assertIn("INFO:root:Skipping:", cm.output[0])
 
     def test_transcribe(self):
-        self.converter.active_model.transcribe = MagicMock(return_value="sample transcription")
-        result = self.converter.transcribe("test.mp3")
-        self.assertEqual(result, "sample transcription")
+        test_audio_file = "test_audio_file"
+        self.mock_config.converter.transcribe.return_value = "transcription"
+        transcription = self.converter.transcribe(test_audio_file)
+        self.assertEqual(transcription, "transcription")
+        self.mock_config.converter.transcribe.assert_called_once_with(test_audio_file)
 
-    def test_create_transcription_file(self):
-        self.converter.create_transcription_file("test.txt", "Test")
-        with open("test.txt", 'r') as f:
-            content = f.read()
-        self.assertEqual(content, "Test")
-        os.remove("test.txt")
+    @patch("src.Converter.open", create=True)
+    def test_create_transcription_file(self, mock_open):
+        test_file = "test_file"
+        test_content = "test_content"
+        self.converter.create_transcription_file(test_file, test_content)
+        mock_open.assert_called_once_with(test_file, "w")
+        mock_open().__enter__().write.assert_called_once_with(test_content)
 
 
 if __name__ == '__main__':

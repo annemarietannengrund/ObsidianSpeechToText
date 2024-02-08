@@ -1,5 +1,4 @@
 from src.Config import Config
-from src.abstracts.AudioTextProcessor import AudioTextProcessor
 from datetime import datetime
 from logging import info, error, warning
 from os import walk
